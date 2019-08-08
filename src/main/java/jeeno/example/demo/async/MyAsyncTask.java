@@ -1,8 +1,12 @@
 package jeeno.example.demo.async;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
@@ -66,4 +70,26 @@ public class MyAsyncTask {
         log.info("timerTask finished.");
         return new AsyncResult<>("timerTask finished.");
     }
+
+    /**
+     * async task with retry mechanism
+     * when throws Exception, it would enter the next calling with 3000ms' delay.
+     */
+    @Async
+    @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 3000, multiplier = 1))
+    public void asyncRetryTask() throws Exception{
+        System.out.println("its calling the func: asyncRetryTask.");
+        // throw the Exception matually
+        throw new Exception();
+    }
+
+    /**
+     * the function corresponding to the asyncRetryTask function, and they must have the same param type and return type
+     * called when maxAttempts calling all failed.
+     */
+    @Recover
+    public void recover(){
+        System.out.println("well, all my calling to function asyncRetryTask were failed. I surrender.");
+    }
+
 }
